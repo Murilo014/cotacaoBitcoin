@@ -9,16 +9,17 @@ import time
 # Adicionando um cache para as requisições
 # Variáveis para cache
 CACHE_DURATION = 60
-last_api_call_time = 0
+last_price_call_time = 0
+last_historical_call_time = 0
 cached_price = None
 cached_historical_data = None
 
 
 # Função para obter a cotação atual do Bitcoin
 def get_bitcoin_price():
-    global last_api_call_time, cached_price
+    global last_price_call_time, cached_price
 
-    if time.time() - last_api_call_time < CACHE_DURATION and cached_price is not None:
+    if time.time() - last_price_call_time < CACHE_DURATION and cached_price is not None:
         return cached_price
     
     try:
@@ -28,7 +29,7 @@ def get_bitcoin_price():
         data = response.json()
         if 'bitcoin' in data and 'usd' in data['bitcoin']:
             cached_price = data['bitcoin'] ['usd']
-            last_api_call_time = time.time()
+            last_price_call_time = time.time()
             return cached_price
         else:
             print("Erro: Dados da API não contêm a chave 'Bitcoin' ou 'USD'.")
@@ -40,9 +41,9 @@ def get_bitcoin_price():
 
 # Função para obter dados históricos do Bitcoin
 def get_historical_data(days):
-    global last_api_call_time, cached_historical_data
+    global last_historical_call_time, cached_historical_data
 
-    if time.time() - last_api_call_time < CACHE_DURATION and cached_historical_data is not None:
+    if time.time() - last_historical_call_time < CACHE_DURATION and cached_historical_data is not None:
         return cached_historical_data
     try:
         url = f"https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days={days}"
@@ -51,7 +52,7 @@ def get_historical_data(days):
         data = response.json()
         if 'prices' in data:
             cached_historical_data = data['prices']
-            last_api_call_time = time.time()
+            last_historical_call_time = time.time()
             return cached_historical_data
         else:
             print("Erro: Dados históricos não contém a chave 'prices'.")
@@ -101,10 +102,12 @@ def update_data():
     ax.grid(True)
     canvas.draw()
 
-    # Agenda a próxima atualização (a cada 30 segundos)
-    root.after(10000, update_data)
+    # Agenda a próxima atualização (a cada 10 segundos)
+    root.after(30000, update_data)
 
 def on_period_change(event):
+    global cached_historical_data
+    cached_historical_data = None # Limpa o cache para forçar a nova requisição
     update_data()
 
 # Configuração da interface gráfica
